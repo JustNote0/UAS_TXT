@@ -119,7 +119,13 @@ def create_pie_chart(data):
 # Streamlit App
 st.title("Analisis Sentiment Review Film Pada IMDb")
 
+# State Management
+if "output_ready" not in st.session_state:
+    st.session_state.output_ready = False
+    st.session_state.labeled_data = None
+
 url = st.text_input("Masukkan link URL review IMDb")
+
 if st.button("Mulai Analisis"):
     if url:
         with st.spinner("Tunggu ya, data masih di scraping..."):
@@ -132,35 +138,43 @@ if st.button("Mulai Analisis"):
                     processed_data = process_scraped_data(data)
                     labeled_data = labeling_sentiment(processed_data)
 
+                    # Simpan output ke state
+                    st.session_state.output_ready = True
+                    st.session_state.labeled_data = labeled_data
+
                     st.success("Analisis komplit!")
-                    st.write("Berikut adalah hasil tabel data:")
-                    st.dataframe(labeled_data)
-
-                    # Tombol unduh tabel
-                    csv_data = labeled_data.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="Unduh Tabel sebagai CSV",
-                        data=csv_data,
-                        file_name="hasil_analisis.csv",
-                        mime="text/csv",
-                    )
-
-                    # Visualisasi pie chart
-                    st.write("Visualisasi distribusi sentimen:")
-                    pie_chart = create_pie_chart(labeled_data)
-                    st.pyplot(pie_chart)
-
-                    # Tombol unduh gambar pie chart
-                    buf = BytesIO()
-                    pie_chart.savefig(buf, format="png")
-                    buf.seek(0)
-                    st.download_button(
-                        label="Unduh Pie Chart sebagai PNG",
-                        data=buf,
-                        file_name="pie_chart.png",
-                        mime="image/png",
-                    )
             except Exception as e:
                 st.error(f"Terjadi kesalahan: {e}")
     else:
         st.warning("Masukkan URL terlebih dahulu.")
+
+if st.session_state.output_ready:
+    labeled_data = st.session_state.labeled_data
+
+    st.write("Berikut adalah hasil tabel data:")
+    st.dataframe(labeled_data)
+
+    # Tombol unduh tabel
+    csv_data = labeled_data.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Unduh Tabel sebagai CSV",
+        data=csv_data,
+        file_name="hasil_analisis.csv",
+        mime="text/csv",
+    )
+
+    # Visualisasi pie chart
+    st.write("Visualisasi distribusi sentimen:")
+    pie_chart = create_pie_chart(labeled_data)
+    st.pyplot(pie_chart)
+
+    # Tombol unduh gambar pie chart
+    buf = BytesIO()
+    pie_chart.savefig(buf, format="png")
+    buf.seek(0)
+    st.download_button(
+        label="Unduh Pie Chart sebagai PNG",
+        data=buf,
+        file_name="pie_chart.png",
+        mime="image/png",
+    )
